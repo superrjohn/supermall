@@ -1,18 +1,24 @@
 <template>
 	<div id='home'>
 	  <nav-bar class='home-nav'><div slot='center'>購物街</div></nav-bar>
-	  
+	   <tab-control :titles='["流行", "新款", "精選"]' 
+	    @tabClick='tabClick' 
+			ref='tabControl1'
+			class='tab-control'
+			v-show='isTabFixed'/>
+
 	  <scroll class='content' 
 	  ref='scroll' 
 	  :probe-type='3'
 	  @scroll='contentScroll' 
 	  :pull-up-load='true'
 	  @pullingUp='loadMore'>
-	    <home-swiper :banners='banners'/>
+	    <home-swiper :banners='banners' @swiperImageLoad='swiperImageLoad'/>
 	    <recommend-view :recommends='recommends'/>
 	    <feature-view/>
 	    <tab-control :titles='["流行", "新款", "精選"]' 
-	    @tabClick='tabClick' ref='tabControl'/>
+	    @tabClick='tabClick' 
+			ref='tabControl2'/>
 	    <goods-list :goods='showGoods'/>
 	  </scroll>	
 	  
@@ -29,11 +35,10 @@
   import TabControl from 'components/content/tabControl/TabControl'
   import GoodsList from 'components/content/goods/GoodsList'
   import Scroll from 'components/common/scroll/Scroll'
-  import BackTop from 'components/content/backTop/BackTop'
   
   import {getHomeMultidata, getHomeGoods} from 'network/home'
-  import {debounce} from 'common/utils'
-  
+  import {itemListenerMixin ,backTopMixin} from 'common/mixin'
+
   export default {
     name: 'Home',
 	components: {
@@ -43,9 +48,9 @@
 	  NavBar,
 	  TabControl,
 	  GoodsList,
-	  Scroll,
-	  BackTop
+	  Scroll
 	},
+	mixins: [itemListenerMixin ,backTopMixin],
 	data() {
 	  return{
 	    banners: [],
@@ -56,14 +61,24 @@
 		  'sell': {page: 0, list: []}
 		},
 		currentType: 'pop',
-		isShowBackTop: false,
-		tabOffsetTop: 0
+		tabOffsetTop: 0,
+		isTabFixed: false,
+		saveY: 0
 	  }
 	},
 	computed: {
 	  showGoods() {
 	    return this.goods[this.currentType].list
 	  }
+	},
+	//Vue 元件被啟動時觸發,搭配 keep-alive 使用時(切換路由時保留位置)
+	activated() {
+		this.$refs.scroll.scrollTo(0, this.saveY, 0)
+		this.$refs.scroll.refresh()
+	},
+	//Vue 元件被解除時觸發，搭配 keep-alive 使用(切換路由時保留位置)
+	deactivated() {
+	  this.saveY = this.$refs.scroll.getScrollY()
 	},
 	created() {
 	  //1.請求多個數據
@@ -76,16 +91,8 @@
 	  
 	},
 	mounted(){
-	/*防抖函數之圖片加載事件監聽*/
-	 const refresh = debounce(this.$refs.scroll.refresh,200)
-	  this.$bus.$on('itemImageLoad', () => {
-	   refresh()
-	  })
-	  /*獲得tabControl的offsetTop*/
-	  this.tabOffsetTop = this.$refs.tabControl
 	},
-	
-	methods: {
+		methods: {
 	  /*事件監聽方法*/
 	  loadMore() {
 	    this.getHomeGoods(this.currentType)
@@ -103,12 +110,22 @@
 		    this.currentType = 'sell'
 			break
 		}
+		  this.$refs.tabControl1.currentIndex = index;
+			this.$refs.tabControl2.currentIndex = index;
 	  },
 	  backClick() {
 	    this.$refs.scroll.scrollTo(0 ,0, 500)
 	  },
 	  contentScroll(position) {
+			//是否顯示BackTop
 	    this.isShowBackTop = (-position.y) > 1000
+
+			//決定tabControl是否為fixed
+			this.isTabFixed = (-position.y) > this.tabOffsetTop
+	  },
+	  swiperImageLoad() {
+	  /*獲得tabControl的offsetTop*/
+	  this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop;
 	  },
 	  
 	  
@@ -136,7 +153,6 @@
 
 <style scoped>
   #home {
-    padding-top: 44px;
 	position: relative;
 	height: 100vh;
   }
@@ -146,11 +162,11 @@
     background-color: var(--color-tint);
 	color:#fff;
 	
-	position: fixed;
+	/*position: fixed;
 	left: 0;
 	right: 0;
 	top: 0;
-	z-index: 2;
+	z-index: 2;*/
   }
   
   .content {
@@ -162,4 +178,9 @@
 	
 	overflow: hidden;
   }
+
+	.tab-control {
+		position: relative;
+		z-index: 2;
+	}
 </style>

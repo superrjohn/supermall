@@ -59,7 +59,10 @@
 	  },
 	  finishPullUp() {
 	    this.scroll && this.scroll.finishPullUp()
-	  }
+	  },
+		getScrollY() {
+			return this.scroll? this.scroll.y : 0
+		}
 	}
   }
   /*Better-scroll決定區域滾動時,是根據scrollerHeight屬性決定,scrollerHeight屬性是
