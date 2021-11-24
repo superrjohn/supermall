@@ -1,0 +1,71 @@
+本項目是用vue開發iphone5手機界面,項目需要請求數據,但數據庫有時不太穩定,無法動作時請刷新一下。
+
+1.開始項目時把目錄結構劃分好,把基礎CSS設計好,在進入文件前建立vue.config.js縮短引入路徑,editorconfig統一風格,方便開發。
+
+2.組件化開發,把封裝好的mainTabBar引入在APP.vue上,點擊tabBar進行路由切換,之後可以針對每個路由開發就行了。
+
+3.封裝獨立NavBar,設計左中右具名的slot,到時根據路由頁面需求修改slot就好。
+
+4.封裝網路請求函數,內容是建立axios實例,建立baseURL,timeout,響應欄截,函數return axios函數,調用時再then接受數據。
+
+5.再封裝home.js對路由會用到的數據,降低直接請求的偶合度,對home.vue的網路請求統一管理。在created()中請求。儲存在data。
+
+6.home.vue只負責排列組件,home要用的組件放在childComps,封裝組件,再對組件進行邏輯判斷。好處是避免邏輯堆在一起。
+
+7.home下封裝Swiper,tabControl,GoodsList,GoddListItem,BackTop等。
+
+8.GoodsList有3個類型可以顯示商品,設計一個物件內有三個物件對應3個類型,物件有自己的頁數和list,封裝一個有params網路請求,
+ 在created()先請求3個類型的第一頁數據,之後再根據用戶對哪個title向上拉觸發頁數+1,請求更多list。用push(...)保存加載數據
+
+9.在tabControl用子傳父事件,把點擊index就顯示相對應的GoodsList類型。
+
+10.因原生滾動在手機上會有點小卡,所以better-scroll框架重構,它的好處是滑到底有彈簧效果,手指放掉不會馬上停,手機上不會卡,
+   滾動事件代碼簡化,但會有bug,所以要除bug。封裝better-scroll,在mounted()建立實例物件。
+
+11.better-scroll最大的bug就是他掛載到組件上時就會計算子組件可滾動的高度,但內容中的圖片是異步操作,因網路請求導致圖片加
+  載完滾動高度跟它一開始計算的不一樣,解決方法是監聽圖片加載完就刷新,但每次加載圖片都刷新會降低性能,利用防抖法就可解決
+
+12.因要監聽圖片加載的組件事件傳遞不到scroll刷新方法,scroll跟組件是非父子關係,所以用了$bus(vue3已棄用,可改mixin/vuex)。
+
+
+13.topControl吸頂效果,弄2個topControl,用v-show顯示,第一個到達第二個offsetTop時顯示,將2個點擊的index統一確保類型一樣。
+
+14.路由切換時用keep-alive保留位置,因better-scroll問題,所以要在deactivated記錄路由解除時位置,activated進入記錄的位置。
+
+15.點擊商品進入詳情頁路由,它是個動態路由,每個商品都有自己的iid,點擊那個就進入對應iid數據的詳情頁
+
+16.封裝詳情頁iid的網路請求,用params動態決定iid的數據。要在keep-alive排除詳情頁,因重新點擊商品時要換掉iid。
+
+17.因請求數據有點亂,所以封裝一個class(構造函數),把請求到的數據先進入整理再放到class內,再面向一個new物件。
+   好處是直接data.title,不用reslove.item.title,有些可能是reslove.shop.discount也可以變成data.discount
+
+18.封裝時間戳轉換函數。
+
+19.因Home和Detail加載圖片時都用到防抖,所以將重複的物件加入mixin,減少重複性。
+
+20.點擊詳情頁的nav-bar跳轉到相對位置,用ref拿到組件元素offsetTop,用組數把它們儲存,再監聽nav-bar的index對應組數進行跳轉。
+
+21.滾動詳情頁nav-bar紅字到相對位置,在offsetTop組數最後加Number.MAX_VALUE,然後進行區間比較,0-1之間是0,最後的組件offsetTop
+   跟最大數比較是3,把比較結果保存傳給nav-bar的currentIndex，然後把index連結currentIndex進行文字變紅。
+
+22.封裝詳情頁底部bottom-bar,監聽加入購物車按鈕,把事件傳給父組件。
+
+23.點擊加入購物車按鈕把商品儲存在vuex中,因要在購物車路由做顯示。用find判決是否已經有商品,已經有數量+1,沒有就加入商品。
+
+24.對vuex的代碼重構,因mutation中的方法總可能比較單一,複雜的判斷在actions做。
+
+25.運用vuex中的mapGetters和mapActions,方便開發。
+
+26.封裝點選按鈕,動態綁定樣式。在商品物件添加checked屬性,點中為true,物件狀況改變要放回自身物件做改變。
+
+27.封裝購物車頁面的bottom-bar,有三個功能,一個是合計,第二是全選按鈕,第三是結算。
+
+   合計:先用filter過濾item.checked是否為true,是就選出來,之後用reduce累加價錢,preValue前一個值加當前的值,最後用toFixed保留兩位小數。
+   全選按鈕:顯示狀態要判斷商品按鈕有沒有選中,用find有一個選中就為false,點擊全選按鈕要判斷商品按鈕是否為true,是就用forEach把item值為false,反之為true。
+   結算:如沒有添加商品就按結算,會彈出toast效果提醒用戶沒有添加商品。
+
+28.封裝toast效果組件變成自定義插件,添加到vue原型上,可以在全局上直接用this.$toast,在加入購物車和結算用。
+
+29.安裝Fastclick插件解決移動端300ms延遲。在GoodListItem用圖片懶加載插件,還有佔位圖。
+
+30.安裝CSS單位轉換插件,把手機大小轉為Iphone6。

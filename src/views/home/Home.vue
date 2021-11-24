@@ -124,7 +124,7 @@
 			this.isTabFixed = (-position.y) > this.tabOffsetTop
 	  },
 	  swiperImageLoad() {
-	  /*獲得tabControl的offsetTop*/
+	  /*$e1獲得組件中元素,獲得tabControl的offsetTop,等輪播圖從網路加載完再調用*/
 	  this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop;
 	  },
 	  
